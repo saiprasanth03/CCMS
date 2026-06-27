@@ -332,7 +332,7 @@ exports.forgotPassword = async (req, res) => {
     sendEmail({
       email: user.email,
       subject: 'Your CCMS Password Reset Code',
-      message: \`Your password reset OTP is: \${otp}\nIt is valid for 10 minutes.\`,
+      message: `Your password reset OTP is: ${otp}\nIt is valid for 10 minutes.`,
       html: htmlMessage
     }).catch(async (err) => {
       console.log('Email sending failed in background:', err.message);

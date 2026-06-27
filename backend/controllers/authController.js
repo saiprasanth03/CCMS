@@ -317,21 +317,20 @@ exports.forgotPassword = async (req, res) => {
     // Send email
     const message = `Your password reset OTP is: ${otp}\nIt is valid for 10 minutes.`;
 
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Password Reset OTP',
-        message
-      });
-
-      res.status(200).json({ success: true, data: 'OTP sent to email (and terminal)' });
-    } catch (err) {
+    // Send email asynchronously so the user doesn't have to wait 5 seconds
+    sendEmail({
+      email: user.email,
+      subject: 'Password Reset OTP',
+      message
+    }).catch(async (err) => {
+      console.log('Email sending failed in background:', err.message);
+      // Clean up the OTP if it failed to send
       user.resetPasswordOtp = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
+    });
 
-      return res.status(500).json({ success: false, error: 'Email could not be sent' });
-    }
+    res.status(200).json({ success: true, data: 'OTP request received and is being processed' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

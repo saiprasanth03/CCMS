@@ -1,9 +1,30 @@
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 // Cache test account globally to prevent 5-10 second delay on every OTP request
 let cachedTestAccount = null;
 
 const sendEmail = async (options) => {
+  // Option 1: Use Resend API (Bypasses Render's Port 587 block)
+  if (process.env.RESEND_API_KEY) {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    try {
+      const data = await resend.emails.send({
+        from: 'CCMS Admin <onboarding@resend.dev>', // Must use this until domain is verified in Resend
+        to: options.email,
+        subject: options.subject,
+        text: options.message,
+      });
+      console.log('Resend Email sent successfully:', data);
+      return;
+    } catch (error) {
+      console.log('Resend Error:', error.message);
+      return;
+    }
+  }
+
+  // Option 2: Use SMTP (Blocked by Render Free Tier)
   let transporter;
   let fromEmail = process.env.FROM_EMAIL || 'noreply@ccms.gov.in';
 

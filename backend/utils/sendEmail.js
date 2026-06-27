@@ -17,6 +17,11 @@ const sendEmail = async (options) => {
         text: options.message,
         html: options.html || `<p>${options.message.replace(/\n/g, '<br>')}</p>`,
       });
+      
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+
       console.log('Resend Email sent successfully:', data);
       return;
     } catch (error) {

@@ -329,20 +329,24 @@ exports.forgotPassword = async (req, res) => {
       </div>
     `;
 
-    sendEmail({
-      email: user.email,
-      subject: 'Your CCMS Password Reset Code',
-      message: `Your password reset OTP is: ${otp}\nIt is valid for 10 minutes.`,
-      html: htmlMessage
-    }).catch(async (err) => {
-      console.log('Email sending failed in background:', err.message);
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Your CCMS Password Reset Code',
+        message: `Your password reset OTP is: ${otp}\nIt is valid for 10 minutes.`,
+        html: htmlMessage
+      });
+      
+      res.status(200).json({ success: true, data: 'OTP sent successfully' });
+    } catch (err) {
+      console.log('Email sending failed:', err.message);
       // Clean up the OTP if it failed to send
       user.resetPasswordOtp = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
-    });
 
-    res.status(200).json({ success: true, data: 'OTP request received and is being processed' });
+      return res.status(500).json({ success: false, error: err.message });
+    }
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

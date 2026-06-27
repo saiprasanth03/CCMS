@@ -15,6 +15,7 @@ const sendEmail = async (options) => {
         to: options.email,
         subject: options.subject,
         text: options.message,
+        html: options.html || `<p>${options.message.replace(/\n/g, '<br>')}</p>`,
       });
       console.log('Resend Email sent successfully:', data);
       return;
@@ -61,6 +62,7 @@ const sendEmail = async (options) => {
     to: options.email,
     subject: options.subject,
     text: options.message,
+    html: options.html || `<p>${options.message.replace(/\n/g, '<br>')}</p>`,
   };
 
   // Log the email content for development purposes

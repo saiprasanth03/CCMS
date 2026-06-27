@@ -314,14 +314,26 @@ exports.forgotPassword = async (req, res) => {
 
     await user.save({ validateBeforeSave: false });
 
-    // Send email
-    const message = `Your password reset OTP is: ${otp}\nIt is valid for 10 minutes.`;
+    // Send email asynchronously so the user doesn't have to wait
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #2563eb; margin-bottom: 20px;">CCMS Password Reset</h2>
+        <p style="font-size: 16px; color: #333;">Hello,</p>
+        <p style="font-size: 16px; color: #333;">We received a request to reset your password. Use the OTP code below to securely change it:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; text-align: center; margin: 25px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e40af;">${otp}</span>
+        </div>
+        <p style="font-size: 14px; color: #666; margin-top: 20px;">This code is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+        <p style="font-size: 12px; color: #999; text-align: center;">Community Complaint Management System (CCMS)</p>
+      </div>
+    `;
 
-    // Send email asynchronously so the user doesn't have to wait 5 seconds
     sendEmail({
       email: user.email,
-      subject: 'Password Reset OTP',
-      message
+      subject: 'Your CCMS Password Reset Code',
+      message: \`Your password reset OTP is: \${otp}\nIt is valid for 10 minutes.\`,
+      html: htmlMessage
     }).catch(async (err) => {
       console.log('Email sending failed in background:', err.message);
       // Clean up the OTP if it failed to send

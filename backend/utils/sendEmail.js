@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer');
 
+// Cache test account globally to prevent 5-10 second delay on every OTP request
+let cachedTestAccount = null;
+
 const sendEmail = async (options) => {
   let transporter;
   let fromEmail = process.env.FROM_EMAIL || 'noreply@ccms.gov.in';
@@ -16,17 +19,20 @@ const sendEmail = async (options) => {
     });
   } else {
     // Generate a test account for development if no real SMTP is provided
-    let testAccount = await nodemailer.createTestAccount();
+    if (!cachedTestAccount) {
+      cachedTestAccount = await nodemailer.createTestAccount();
+    }
+    
     transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
       secure: false, // true for 465, false for other ports
       auth: {
-        user: testAccount.user, // generated ethereal user
-        pass: testAccount.pass, // generated ethereal password
+        user: cachedTestAccount.user, // generated ethereal user
+        pass: cachedTestAccount.pass, // generated ethereal password
       },
     });
-    fromEmail = testAccount.user;
+    fromEmail = cachedTestAccount.user;
   }
 
   const message = {

@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Save, CheckCircle, AlertCircle, Shield } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const Profile = () => {
   const { user, updateMe } = useContext(AuthContext);
+  const { t } = useLanguage();
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -43,7 +45,7 @@ const Profile = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update profile');
+      setError(err.response?.data?.error || t('profile.updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -63,19 +65,19 @@ const Profile = () => {
               {user?.fullName?.charAt(0) || 'U'}
             </div>
             <div className="text-center sm:text-left">
-              <h1 className="text-3xl font-bold">{user?.fullName || 'User Profile'}</h1>
+              <h1 className="text-3xl font-bold">{user?.fullName || t('profile.title')}</h1>
               <p className="text-blue-100 flex items-center justify-center sm:justify-start mt-1">
                 {user?.role === 'admin' ? (
-                  <><Shield className="w-4 h-4 mr-1" /> {user?.adminLevel} Admin</>
+                  <><Shield className="w-4 h-4 mr-1" /> {user?.adminLevel} {t('profile.adminRole')}</>
                 ) : (
-                  <><User className="w-4 h-4 mr-1" /> Citizen</>
+                  <><User className="w-4 h-4 mr-1" /> {t('profile.citizenRole')}</>
                 )}
               </p>
             </div>
           </div>
 
           <div className="p-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Personal Information</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-6">{t('profile.personalInfo')}</h2>
             
             {error && (
               <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 flex items-center">
@@ -87,14 +89,14 @@ const Profile = () => {
             {success && (
               <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 flex items-center">
                 <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                <p className="text-sm text-green-700">Profile updated successfully!</p>
+                <p className="text-sm text-green-700">{t('profile.updateSuccess')}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.fullName')}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <User className="h-5 w-5 text-gray-400" />
@@ -110,7 +112,7 @@ const Profile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.email')}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Mail className="h-5 w-5 text-gray-400" />
@@ -122,11 +124,11 @@ const Profile = () => {
                       disabled
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed directly.</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('profile.emailHelper')}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.phone')}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Phone className="h-5 w-5 text-gray-400" />
@@ -142,7 +144,7 @@ const Profile = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.address')}</label>
                   <div className="relative">
                     <div className="absolute top-3 left-3 pointer-events-none">
                       <MapPin className="h-5 w-5 text-gray-400" />
@@ -163,7 +165,7 @@ const Profile = () => {
                   disabled={loading}
                   className="btn-primary flex items-center py-2 px-6"
                 >
-                  {loading ? 'Saving...' : <><Save className="w-5 h-5 mr-2" /> Save Changes</>}
+                  {loading ? t('profile.saving') : <><Save className="w-5 h-5 mr-2" /> {t('profile.saveChanges')}</>}
                 </button>
               </div>
             </form>

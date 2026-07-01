@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import api from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const TrackComplaints = () => {
+  const { t } = useLanguage();
+  
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,14 +36,14 @@ const TrackComplaints = () => {
       <div className="max-w-5xl mx-auto">
         <div className="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Track Public Complaints</h1>
-            <p className="text-gray-600">Search and track community issues in real-time</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('track.title')}</h1>
+            <p className="text-gray-600">{t('track.subtitle')}</p>
           </div>
           <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input 
               type="text" 
-              placeholder="Search ID, Title, Category..." 
+              placeholder={t('track.searchPlaceholder')} 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white shadow-sm"
@@ -55,7 +58,7 @@ const TrackComplaints = () => {
         ) : (
           <div className="space-y-4">
             {filtered.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 glass-card">No complaints found.</div>
+              <div className="text-center py-12 text-gray-500 glass-card">{t('track.noComplaints')}</div>
             ) : (
               filtered.map((complaint) => (
                 <motion.div 
@@ -75,7 +78,7 @@ const TrackComplaints = () => {
                         {complaint.status}
                       </span>
                       <span className="text-xs font-medium text-gray-500 border border-gray-200 px-2 py-1 rounded">
-                        Priority: {complaint.priority}
+                        {t('track.priority')}: {complaint.priority}
                       </span>
                     </div>
                     <h3 className="font-bold text-lg text-gray-900">{complaint.title}</h3>

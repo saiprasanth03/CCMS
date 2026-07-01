@@ -16,10 +16,12 @@ import TrackComplaints from './pages/TrackComplaints';
 import NotFound from './pages/NotFound';
 import About from './pages/About';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
+    <LanguageProvider>
     <AuthProvider>
       <Router>
         <div className="min-h-screen bg-background text-gray-800 flex flex-col">
@@ -54,6 +56,7 @@ function App() {
       </div>
     </Router>
     </AuthProvider>
+    </LanguageProvider>
   );
 }
 

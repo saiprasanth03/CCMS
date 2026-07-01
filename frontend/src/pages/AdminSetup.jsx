@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Shield, Mail, Lock, CheckCircle } from 'lucide-react';
 import api from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const AdminSetup = () => {
   const { user, updateMe } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -28,7 +30,7 @@ const AdminSetup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password && formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
+      return setError(t('adminSetup.passwordMismatch'));
     }
     
     setError('');
@@ -49,7 +51,7 @@ const AdminSetup = () => {
       // Redirect to admin dashboard
       navigate('/admin');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to complete setup');
+      setError(err.response?.data?.error || t('adminSetup.setupFailed'));
     } finally {
       setLoading(false);
     }
@@ -62,10 +64,10 @@ const AdminSetup = () => {
           <Shield className="h-8 w-8 text-primary" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Admin Initialization
+          {t('adminSetup.title')}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 px-4">
-          Welcome! Before accessing the dashboard, you must register your official email address for security and password recovery purposes.
+          {t('adminSetup.desc')}
         </p>
       </div>
 
@@ -80,7 +82,7 @@ const AdminSetup = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Official Email Address <span className="text-red-500">*</span>
+                {t('adminSetup.emailLabel')} <span className="text-red-500">*</span>
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -90,7 +92,7 @@ const AdminSetup = () => {
                   type="email"
                   required
                   className="input-field pl-10"
-                  placeholder="name@gov.in"
+                  placeholder={t('adminSetup.emailPlaceholder')}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -99,9 +101,9 @@ const AdminSetup = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                New Password (Optional)
+                {t('adminSetup.newPassword')}
               </label>
-              <p className="text-xs text-gray-500 mb-1">If you want to change your auto-generated password.</p>
+              <p className="text-xs text-gray-500 mb-1">{t('adminSetup.newPasswordHelper')}</p>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
@@ -119,7 +121,7 @@ const AdminSetup = () => {
             {formData.password && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Confirm New Password
+                  {t('adminSetup.confirmPassword')}
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -143,9 +145,9 @@ const AdminSetup = () => {
                 disabled={loading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none transition-colors"
               >
-                {loading ? 'Saving...' : (
+                {loading ? t('adminSetup.saving') : (
                   <>
-                    <CheckCircle className="h-5 w-5 mr-2" /> Complete Setup
+                    <CheckCircle className="h-5 w-5 mr-2" /> {t('adminSetup.completeSetup')}
                   </>
                 )}
               </button>

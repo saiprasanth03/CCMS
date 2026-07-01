@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, AlertCircle, ShieldAlert } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     identifier: '',
     password: ''
@@ -31,7 +33,7 @@ const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid credentials');
+      setError(err.response?.data?.error || t('login.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -50,12 +52,12 @@ const Login = () => {
           </div>
         </motion.div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
+          {t('login.title')}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
+          {t('login.or')}{' '}
           <Link to="/register" className="font-medium text-primary hover:text-blue-500">
-            register as a new citizen
+            {t('login.registerLink')}
           </Link>
         </p>
       </div>
@@ -77,7 +79,7 @@ const Login = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email or Admin ID
+                {t('login.emailLabel')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -87,7 +89,7 @@ const Login = () => {
                   type="text"
                   required
                   className="input-field pl-10"
-                  placeholder="Enter email or admin ID"
+                  placeholder={t('login.emailPlaceholder')}
                   value={formData.identifier}
                   onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
                 />
@@ -96,7 +98,7 @@ const Login = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                {t('login.passwordLabel')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -121,13 +123,13 @@ const Login = () => {
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
+                  {t('login.rememberMe')}
                 </label>
               </div>
 
               <div className="text-sm">
                 <Link to="/forgot-password" className="font-medium text-primary hover:text-blue-500">
-                  Forgot your password?
+                  {t('login.forgotPassword')}
                 </Link>
               </div>
             </div>
@@ -138,9 +140,9 @@ const Login = () => {
                 disabled={loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-70 flex items-center"
               >
-                {loading ? 'Signing in...' : (
+                {loading ? t('login.signingIn') : (
                   <>
-                    <LogIn className="w-5 h-5 mr-2" /> Sign in
+                    <LogIn className="w-5 h-5 mr-2" /> {t('login.signIn')}
                   </>
                 )}
               </button>

@@ -3,10 +3,13 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Clock, MapPin, Layers, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const LandingPage = () => {
+  const { t } = useLanguage();
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  
 
   const handleReportClick = (e) => {
     e.preventDefault();
@@ -35,7 +38,7 @@ const LandingPage = () => {
               className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-primary font-medium text-sm mb-8 shadow-sm"
             >
               <span className="flex h-2 w-2 rounded-full bg-blue-600 mr-2 animate-pulse"></span>
-              Next-Gen Civic Management System
+              {t('landing.badge')}
             </motion.div>
             
             <motion.h1 
@@ -44,10 +47,7 @@ const LandingPage = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-5xl md:text-7xl font-extrabold text-gray-900 tracking-tight mb-8 leading-tight"
             >
-              Bridging the gap between <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-600 to-accent">
-                Citizens & Government
-              </span>
+              {t('landing.heroTitle')}
             </motion.h1>
             
             <motion.p 
@@ -56,7 +56,7 @@ const LandingPage = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-xl md:text-2xl text-gray-600 mb-10 leading-relaxed"
             >
-              Report infrastructural issues, track real-time resolution, and hold local authorities accountable through our automated hierarchical escalation matrix.
+              {t('landing.heroDesc')}
             </motion.p>
             
             <motion.div 
@@ -66,10 +66,10 @@ const LandingPage = () => {
               className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6"
             >
               <button onClick={handleReportClick} className="btn-primary text-lg px-8 py-4 flex items-center shadow-lg shadow-blue-500/30 hover:-translate-y-1 transition-all w-full sm:w-auto justify-center">
-                Report an Issue <ArrowRight className="ml-2 h-5 w-5" />
+                {t('landing.reportBtn')} <ArrowRight className="ml-2 h-5 w-5" />
               </button>
               <Link to="/track" className="glass-card hover:bg-gray-50 text-gray-800 font-bold text-lg px-8 py-4 border border-gray-200 hover:-translate-y-1 transition-all w-full sm:w-auto text-center">
-                Track Complaint
+                {t('landing.trackBtn')}
               </Link>
             </motion.div>
           </div>
@@ -86,25 +86,25 @@ const LandingPage = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="text-primary font-bold tracking-wider uppercase text-sm mb-2">Our Unique Feature</div>
+              <div className="text-primary font-bold tracking-wider uppercase text-sm mb-2">{t('landing.featureTitle')}</div>
               <h2 className="text-4xl font-extrabold text-gray-900 mb-6 leading-tight">
-                Automated Hierarchical <br/>Escalation
+                {t('landing.featureDesc')}
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Unlike generic complaint portals that dump all tickets into a single massive queue, CCMS uses a smart jurisdiction router.
+                {t('landing.featureRegister')}
               </p>
               <ul className="space-y-4">
                 <li className="flex items-start">
                   <CheckCircle2 className="h-6 w-6 text-success flex-shrink-0 mr-3" />
-                  <p className="text-gray-700"><strong>Pinpoint Routing:</strong> Complaints are instantly assigned to the specific Village or Ward Officer.</p>
+                  <p className="text-gray-700"><strong>{t('landing.pinpoint')}</strong> {t('landing.pinpointDesc')}</p>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle2 className="h-6 w-6 text-warning flex-shrink-0 mr-3" />
-                  <p className="text-gray-700"><strong>Time-Bound Action:</strong> If an issue isn't resolved within the SLA (Service Level Agreement) timeframe...</p>
+                  <p className="text-gray-700"><strong>{t('landing.timeBound')}</strong> {t('landing.timeBoundDesc')}</p>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle2 className="h-6 w-6 text-red-500 flex-shrink-0 mr-3" />
-                  <p className="text-gray-700"><strong>Automatic Escalation:</strong> It automatically escalates to Mandal, then District, and finally State-level Superadmins.</p>
+                  <p className="text-gray-700"><strong>{t('landing.autoEscalation')}</strong> {t('landing.autoEscalationDesc')}</p>
                 </li>
               </ul>
             </motion.div>
@@ -120,32 +120,32 @@ const LandingPage = () => {
                 <div className="flex flex-col space-y-4">
                   <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-red-800">State Admin (Highest)</h4>
-                      <p className="text-xs text-red-600">Views unresolved critical escalations</p>
+                      <h4 className="font-bold text-red-800">{t('landing.stateAdmin')}</h4>
+                      <p className="text-xs text-red-600">{t('landing.stateAdminDesc')}</p>
                     </div>
                     <Layers className="text-red-400 h-6 w-6" />
                   </div>
                   <div className="w-1 h-6 bg-gray-200 mx-auto" />
                   <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-orange-800">District Collector</h4>
-                      <p className="text-xs text-orange-600">Escalated after 14 days</p>
+                      <h4 className="font-bold text-orange-800">{t('landing.districtCollector')}</h4>
+                      <p className="text-xs text-orange-600">{t('landing.districtCollectorDesc')}</p>
                     </div>
                     <Layers className="text-orange-400 h-6 w-6" />
                   </div>
                   <div className="w-1 h-6 bg-gray-200 mx-auto" />
                   <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-blue-800">Mandal Officer</h4>
-                      <p className="text-xs text-blue-600">Escalated after 7 days</p>
+                      <h4 className="font-bold text-blue-800">{t('landing.mandalOfficer')}</h4>
+                      <p className="text-xs text-blue-600">{t('landing.mandalOfficerDesc')}</p>
                     </div>
                     <Layers className="text-blue-400 h-6 w-6" />
                   </div>
                   <div className="w-1 h-6 bg-gray-200 mx-auto" />
                   <div className="p-4 bg-green-50 rounded-xl border border-green-100 flex items-center justify-between ring-2 ring-green-400 shadow-lg scale-105">
                     <div>
-                      <h4 className="font-bold text-green-800">Village Authority (Direct)</h4>
-                      <p className="text-xs text-green-600">Immediate assignment upon submission</p>
+                      <h4 className="font-bold text-green-800">{t('landing.villageAuth')}</h4>
+                      <p className="text-xs text-green-600">{t('landing.villageAuthDesc')}</p>
                     </div>
                     <Layers className="text-green-500 h-6 w-6" />
                   </div>
@@ -160,8 +160,8 @@ const LandingPage = () => {
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900">Built for Transparency</h2>
-            <p className="mt-4 text-xl text-gray-600">Everything you need to track civic improvements in your neighborhood.</p>
+            <h2 className="text-3xl font-extrabold text-gray-900">{t('landing.escalationTitle')}</h2>
+            <p className="mt-4 text-xl text-gray-600">{t('landing.escalationSubtitle')}</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -169,24 +169,24 @@ const LandingPage = () => {
               <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
                 <MapPin className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Geo-Tagged Evidence</h3>
-              <p className="text-gray-600 leading-relaxed">Upload photos with strict location data so authorities know exactly where the problem is located, reducing survey times.</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('landing.geoTitle')}</h3>
+              <p className="text-gray-600 leading-relaxed">{t('landing.geoDesc')}</p>
             </motion.div>
             
             <motion.div whileHover={{ y: -5 }} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300">
               <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-6">
                 <Clock className="h-7 w-7 text-success" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Live Status Tracking</h3>
-              <p className="text-gray-600 leading-relaxed">No more black boxes. Track your complaint status from "Received" to "In Progress" to "Resolved" with timestamps.</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('landing.liveTitle')}</h3>
+              <p className="text-gray-600 leading-relaxed">{t('landing.liveDesc')}</p>
             </motion.div>
             
             <motion.div whileHover={{ y: -5 }} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300">
               <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
                 <TrendingUp className="h-7 w-7 text-purple-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Data Analytics</h3>
-              <p className="text-gray-600 leading-relaxed">Public dashboards allow citizens to view resolution rates for different mandals and districts, promoting healthy competition.</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('landing.dataTitle')}</h3>
+              <p className="text-gray-600 leading-relaxed">{t('landing.dataDesc')}</p>
             </motion.div>
           </div>
         </div>
@@ -195,10 +195,10 @@ const LandingPage = () => {
       {/* Call to action */}
       <section className="py-20 bg-primary">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">Ready to make a difference?</h2>
-          <p className="text-blue-100 text-lg md:text-xl mb-10">It takes less than 2 minutes to report a civic issue and trigger a government response.</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">{t('landing.ctaTitle')}</h2>
+          <p className="text-blue-100 text-lg md:text-xl mb-10">{t('landing.escalationDesc')}</p>
           <button onClick={handleReportClick} className="bg-white text-primary hover:bg-gray-50 text-xl font-bold px-10 py-4 rounded-xl shadow-lg transition-transform hover:scale-105">
-            Register a Complaint Now
+            {t('landing.ctaBtn')}
           </button>
         </div>
       </section>

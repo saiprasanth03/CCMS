@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import { Lock, KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '../services/api';
 
 const ResetPassword = () => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [formData, setFormData] = useState({
     otp: '',
@@ -17,6 +19,7 @@ const ResetPassword = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
+  
 
   useEffect(() => {
     // If we passed email from the forgot-password route, use it
@@ -29,7 +32,7 @@ const ResetPassword = () => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
+      return setError(t('reset.passwordMismatch'));
     }
     
     setError('');
@@ -47,7 +50,7 @@ const ResetPassword = () => {
         navigate('/login');
       }, 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid OTP or expired token.');
+      setError(err.response?.data?.error || t('reset.resetFailed'));
     } finally {
       setLoading(false);
     }
@@ -66,10 +69,10 @@ const ResetPassword = () => {
           </div>
         </motion.div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Reset Password
+          {t('reset.title')}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 px-4">
-          Enter the 6-digit OTP sent to your email and choose a new password.
+          {t('reset.desc')}
         </p>
       </div>
 
@@ -89,8 +92,8 @@ const ResetPassword = () => {
           {success && (
             <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-md flex flex-col items-center justify-center text-center">
               <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-              <p className="text-sm text-green-700 font-bold">Password Reset Successful!</p>
-              <p className="text-xs text-green-600 mt-1">You will be redirected to the login page momentarily.</p>
+              <p className="text-sm text-green-700 font-bold">{t('reset.resetSuccess')}</p>
+              <p className="text-xs text-green-600 mt-1">{t('reset.resetSuccessDesc')}</p>
             </div>
           )}
 
@@ -99,13 +102,13 @@ const ResetPassword = () => {
               {!location.state?.email && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
+                    {t('reset.emailLabel')}
                   </label>
                   <input
                     type="email"
                     required
                     className="input-field"
-                    placeholder="Enter your email"
+                    placeholder={t('reset.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -114,13 +117,13 @@ const ResetPassword = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  6-Digit OTP
+                  {t('reset.otpLabel')}
                 </label>
                 <input
                   type="text"
                   required
                   className="input-field text-center tracking-[0.5em] text-lg font-mono"
-                  placeholder="------"
+                  placeholder={t('reset.otpPlaceholder')}
                   maxLength="6"
                   value={formData.otp}
                   onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
@@ -129,7 +132,7 @@ const ResetPassword = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
+                  {t('reset.newPassword')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -148,7 +151,7 @@ const ResetPassword = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm New Password
+                  {t('reset.confirmPassword')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -171,7 +174,7 @@ const ResetPassword = () => {
                   disabled={loading}
                   className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-70"
                 >
-                  {loading ? 'Resetting Password...' : 'Reset Password'}
+                  {loading ? t('reset.resetting') : t('reset.resetBtn')}
                 </button>
               </div>
             </form>
@@ -179,7 +182,7 @@ const ResetPassword = () => {
 
           <div className="mt-6 text-center">
             <Link to="/login" className="text-sm font-medium text-primary hover:text-blue-500">
-              Return to login
+              {t('reset.returnLogin')}
             </Link>
           </div>
         </motion.div>

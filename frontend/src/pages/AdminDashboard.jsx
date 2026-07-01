@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   Users, AlertTriangle, CheckCircle, BarChart3, 
-  Settings, Search, Filter, MoreVertical, Menu, X, MapPin, Phone, Upload, UserPlus, ShieldAlert
+  Settings, Search, Filter, MoreVertical, Menu, X, MapPin, Phone, Upload, UserPlus, ShieldAlert, Trash2
 } from 'lucide-react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -114,6 +114,17 @@ const AdminDashboard = () => {
       fetchComplaints(); // Refresh data
     } catch (err) {
       alert(t('admin.statusUpdateFailed'));
+    }
+  };
+
+  const handleDeleteComplaint = async (id) => {
+    if (window.confirm(t('admin.confirmDelete'))) {
+      try {
+        await api.delete(`/complaints/${id}`);
+        fetchComplaints();
+      } catch (err) {
+        alert(t('admin.deleteFailed'));
+      }
     }
   };
 
@@ -355,12 +366,19 @@ const AdminDashboard = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 text-center">
+                      <td className="px-6 py-4 text-sm text-gray-500 text-center flex justify-center space-x-2">
                         <button 
                           onClick={() => setSelectedComplaint(item)}
                           className="text-gray-400 hover:text-primary transition-colors focus:outline-none p-2 rounded-full hover:bg-blue-50"
                         >
                           <MoreVertical className="h-5 w-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteComplaint(item._id)}
+                          className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none p-2 rounded-full hover:bg-red-50"
+                          title="Delete Complaint"
+                        >
+                          <Trash2 className="h-5 w-5" />
                         </button>
                       </td>
                     </tr>

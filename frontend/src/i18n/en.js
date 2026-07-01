@@ -225,6 +225,8 @@ const en = {
     anonymous: 'Anonymous',
     location: 'Location',
     locationNotProvided: 'Location not provided',
+    deleteFailed: 'Failed to delete complaint',
+    confirmDelete: 'Are you sure you want to delete this complaint?',
     close: 'Close',
   },
 

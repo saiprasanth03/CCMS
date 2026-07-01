@@ -3,7 +3,8 @@ const {
   getComplaints,
   getComplaint,
   createComplaint,
-  updateComplaintStatus
+  updateComplaintStatus,
+  deleteComplaint
 } = require('../controllers/complaintsController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -23,7 +24,8 @@ router.route('/')
   .post(protect, createComplaint);
 
 router.route('/:id')
-  .get(getComplaint);
+  .get(getComplaint)
+  .delete(protect, authorize('admin', 'superadmin'), deleteComplaint);
 
 router.route('/:id/status')
   .put(protect, authorize('admin'), updateComplaintStatus);

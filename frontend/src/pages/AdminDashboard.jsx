@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   Users, AlertTriangle, CheckCircle, BarChart3, 
-  Settings, Search, Filter, MoreVertical, Menu, X, MapPin, Phone, Upload, UserPlus, ShieldAlert, Trash2
+  Settings, Search, Filter, MoreVertical, Menu, X, MapPin, Phone, Upload, UserPlus, ShieldAlert, Trash2,
+  ShieldCheck, Mail, RefreshCw, KeyRound
 } from 'lucide-react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -31,6 +32,12 @@ const AdminDashboard = () => {
   });
   const [createdAdmin, setCreatedAdmin] = useState(null);
   const [adminError, setAdminError] = useState('');
+
+  // Users Management State
+  const [usersList, setUsersList] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersFilter, setUsersFilter] = useState('all'); // 'all' | 'admins' | 'citizens'
+  const [userSearchQuery, setUserSearchQuery] = useState('');
   
   // Search and Modal State
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +90,7 @@ const AdminDashboard = () => {
         
         const res = await api.post('/auth/register-admin-bulk', { admins: adminsData });
         setBulkResults(res.data.data);
+        fetchUsers(); // Refresh users table
       } catch (err) {
         setBulkError(err.message || err.response?.data?.error || t('admin.csvError'));
       } finally {
@@ -104,9 +112,24 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const res = await api.get('/users');
+      setUsersList(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch users', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchComplaints();
-  }, []);
+    if (currentUser?.adminLevel === 'superadmin') {
+      fetchUsers();
+    }
+  }, [currentUser]);
 
   const handleStatusChange = async (id, newStatus) => {
     try {
@@ -133,26 +156,42 @@ const AdminDashboard = () => {
     setAdminError('');
     setCreatedAdmin(null);
     try {
+      const isSuper = adminForm.adminLevel === 'superadmin';
       const payload = {
-        fullName: adminForm.fullName,
-        phoneNumber: adminForm.phoneNumber,
+        fullName: adminForm.fullName.trim(),
+        phoneNumber: adminForm.phoneNumber.trim(),
         adminLevel: adminForm.adminLevel,
-        address: `${adminForm.village || ''} ${adminForm.mandal || ''} ${adminForm.district || ''}`.trim() || t('admin.na'),
-        jurisdiction: {
-          state: adminForm.state,
-          district: adminForm.district,
-          mandal: adminForm.mandal,
-          village: adminForm.village,
-          pincode: adminForm.pincode
+        address: isSuper ? 'Central Secretariat / Global' : `${adminForm.village || ''} ${adminForm.mandal || ''} ${adminForm.district || ''}`.trim() || t('admin.na'),
+        jurisdiction: isSuper ? {} : {
+          state: (adminForm.state || '').trim(),
+          district: (adminForm.district || '').trim(),
+          mandal: (adminForm.mandal || '').trim(),
+          village: (adminForm.village || '').trim(),
+          pincode: (adminForm.pincode || '').trim()
         }
       };
       
       const res = await api.post('/auth/register-admin', payload);
       setCreatedAdmin(res.data.data);
+      fetchUsers(); // Refresh users directory
       // Reset form fields
       setAdminForm({ ...adminForm, fullName: '', phoneNumber: '', pincode: '', village: '' });
     } catch (err) {
       setAdminError(err.response?.data?.error || t('admin.adminCreateFailed'));
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (userId === currentUser?.id || userId === currentUser?._id) {
+      return alert(t('admin.cannotDeleteSelf'));
+    }
+    if (window.confirm(t('admin.confirmDeleteUser'))) {
+      try {
+        await api.delete(`/users/${userId}`);
+        fetchUsers();
+      } catch (err) {
+        alert(err.response?.data?.error || t('admin.userDeleteFailed'));
+      }
     }
   };
 
@@ -202,6 +241,30 @@ const AdminDashboard = () => {
     
     return matchId || matchTitle || matchName || matchPhone || matchStreet || matchCity || matchMandal || matchDistrict || matchState || matchPincode;
   });
+
+  // Filtered Users List
+  const filteredUsers = usersList.filter(u => {
+    if (usersFilter === 'admins' && u.role !== 'admin') return false;
+    if (usersFilter === 'citizens' && u.role === 'admin') return false;
+
+    if (!userSearchQuery) return true;
+    const q = userSearchQuery.toLowerCase();
+    const matchName = u.fullName?.toLowerCase().includes(q);
+    const matchEmail = u.email?.toLowerCase().includes(q);
+    const matchPhone = u.phoneNumber?.toLowerCase().includes(q);
+    const matchSystemId = u.systemId?.toLowerCase().includes(q);
+    const matchLevel = u.adminLevel?.toLowerCase().includes(q);
+    const j = u.jurisdiction || {};
+    const matchPincode = j.pincode?.toLowerCase().includes(q);
+    const matchCity = (j.village || j.city)?.toLowerCase().includes(q);
+    const matchDistrict = j.district?.toLowerCase().includes(q);
+    const matchState = j.state?.toLowerCase().includes(q);
+    return matchName || matchEmail || matchPhone || matchSystemId || matchLevel || matchPincode || matchCity || matchDistrict || matchState;
+  });
+
+  const totalUsers = usersList.length;
+  const totalAdmins = usersList.filter(u => u.role === 'admin').length;
+  const totalCitizens = usersList.filter(u => u.role !== 'admin').length;
 
   const total = complaints.length;
   const open = complaints.filter(c => c.status === 'Submitted' || c.status === 'In Progress').length;
@@ -421,6 +484,7 @@ const AdminDashboard = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.adminLevel')}</label>
                     <select className="input-field bg-white" value={adminForm.adminLevel} onChange={e => setAdminForm({...adminForm, adminLevel: e.target.value})}>
+                      <option value="superadmin">{t('admin.superAdminLevel')}</option>
                       <option value="state">{t('admin.stateLevel')}</option>
                       <option value="district">{t('admin.districtLevel')}</option>
                       <option value="mandal">{t('admin.mandalLevel')}</option>
@@ -428,36 +492,43 @@ const AdminDashboard = () => {
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.state')}</label>
-                      <input type="text" required className="input-field" placeholder={t('admin.statePlaceholder')} value={adminForm.state} onChange={e => setAdminForm({...adminForm, state: e.target.value})} />
+                  {adminForm.adminLevel === 'superadmin' ? (
+                    <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg text-xs flex items-center">
+                      <ShieldCheck className="h-5 w-5 mr-2 text-primary flex-shrink-0" />
+                      <span>{t('admin.superAdminNotice')}</span>
                     </div>
-                    {(adminForm.adminLevel === 'district' || adminForm.adminLevel === 'mandal' || adminForm.adminLevel === 'village') && (
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.district')}</label>
-                        <input type="text" required className="input-field" placeholder={t('admin.districtPlaceholder')} value={adminForm.district} onChange={e => setAdminForm({...adminForm, district: e.target.value})} />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.state')}</label>
+                        <input type="text" required className="input-field" placeholder={t('admin.statePlaceholder')} value={adminForm.state} onChange={e => setAdminForm({...adminForm, state: e.target.value})} />
                       </div>
-                    )}
-                    {(adminForm.adminLevel === 'mandal' || adminForm.adminLevel === 'village') && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.mandal')}</label>
-                        <input type="text" required className="input-field" placeholder={t('admin.mandalPlaceholder')} value={adminForm.mandal} onChange={e => setAdminForm({...adminForm, mandal: e.target.value})} />
-                      </div>
-                    )}
-                    {adminForm.adminLevel === 'village' && (
-                      <>
+                      {(adminForm.adminLevel === 'district' || adminForm.adminLevel === 'mandal' || adminForm.adminLevel === 'village') && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.village')}</label>
-                          <input type="text" required className="input-field" placeholder={t('admin.villagePlaceholder')} value={adminForm.village} onChange={e => setAdminForm({...adminForm, village: e.target.value})} />
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.district')}</label>
+                          <input type="text" required className="input-field" placeholder={t('admin.districtPlaceholder')} value={adminForm.district} onChange={e => setAdminForm({...adminForm, district: e.target.value})} />
                         </div>
+                      )}
+                      {(adminForm.adminLevel === 'mandal' || adminForm.adminLevel === 'village') && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.pincode')}</label>
-                          <input type="text" required className="input-field" placeholder={t('admin.pincodePlaceholder')} value={adminForm.pincode} onChange={e => setAdminForm({...adminForm, pincode: e.target.value})} />
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.mandal')}</label>
+                          <input type="text" required className="input-field" placeholder={t('admin.mandalPlaceholder')} value={adminForm.mandal} onChange={e => setAdminForm({...adminForm, mandal: e.target.value})} />
                         </div>
-                      </>
-                    )}
-                  </div>
+                      )}
+                      {adminForm.adminLevel === 'village' && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.village')}</label>
+                            <input type="text" required className="input-field" placeholder={t('admin.villagePlaceholder')} value={adminForm.village} onChange={e => setAdminForm({...adminForm, village: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.pincode')}</label>
+                            <input type="text" required className="input-field" placeholder={t('admin.pincodePlaceholder')} value={adminForm.pincode} onChange={e => setAdminForm({...adminForm, pincode: e.target.value})} />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   <button type="submit" className="btn-primary w-full py-3 mt-4">{t('admin.generateBtn')}</button>
                 </form>
@@ -490,6 +561,188 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Registered Users and Administrators Directory */}
+          <div className="glass-card p-6 bg-white shadow-sm border border-gray-100">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                  <Users className="mr-2 text-primary h-6 w-6" /> {t('admin.registeredUsersTitle')}
+                </h3>
+                <p className="text-sm text-gray-500">{t('admin.pageSubtitle')}</p>
+              </div>
+
+              {/* Filter Tabs & Search & Refresh */}
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-stretch sm:items-center">
+                <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+                  <button
+                    onClick={() => setUsersFilter('all')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${usersFilter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                  >
+                    {t('admin.allUsersTab')} ({totalUsers})
+                  </button>
+                  <button
+                    onClick={() => setUsersFilter('admins')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${usersFilter === 'admins' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                  >
+                    {t('admin.adminsTab')} ({totalAdmins})
+                  </button>
+                  <button
+                    onClick={() => setUsersFilter('citizens')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${usersFilter === 'citizens' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                  >
+                    {t('admin.citizensTab')} ({totalCitizens})
+                  </button>
+                </div>
+
+                <div className="relative flex-grow sm:flex-grow-0">
+                  <Search className="h-4 w-4 text-gray-400 absolute left-3 top-2.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder={t('admin.searchUsersPlaceholder')}
+                    className="input-field pl-9 py-1.5 text-xs w-full sm:w-60 border-gray-300"
+                    value={userSearchQuery}
+                    onChange={e => setUserSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                <button 
+                  onClick={fetchUsers} 
+                  title="Refresh"
+                  className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors flex items-center justify-center"
+                >
+                  <RefreshCw className={`h-4 w-4 ${usersLoading ? 'animate-spin text-primary' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto min-h-[250px]">
+              <table className="w-full text-left whitespace-nowrap">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('admin.nameTitle')}</th>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('admin.roleHeader')}</th>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('admin.idEmailHeader')}</th>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('admin.phoneHeader')}</th>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('admin.jurisdictionHeader')}</th>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('admin.statusHeader')}</th>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('admin.createdHeader')}</th>
+                    <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">{t('admin.actionsHeader')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {usersLoading && usersList.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="py-12 text-center text-gray-500">
+                        <div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mb-2"></div>
+                        <p>{t('admin.processing')}</p>
+                      </td>
+                    </tr>
+                  ) : filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="py-10 text-center text-gray-500">
+                        {t('admin.noUsersFound')}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((u) => {
+                      const isCurrentUser = u._id === currentUser?.id || u._id === currentUser?._id;
+                      const j = u.jurisdiction || {};
+                      return (
+                        <tr key={u._id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-5 py-3.5 text-sm font-medium text-gray-900">
+                            <div className="flex items-center space-x-2">
+                              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                u.role === 'admin' ? 'bg-blue-100 text-primary' : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {(u.fullName || 'U').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-gray-900">{u.fullName || 'User'}</span>
+                                {isCurrentUser && (
+                                  <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold">You</span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {u.role === 'admin' ? (
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                                u.adminLevel === 'superadmin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                u.adminLevel === 'state' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                u.adminLevel === 'district' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                u.adminLevel === 'mandal' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}>
+                                {u.adminLevel ? `${u.adminLevel.toUpperCase()} ADMIN` : 'ADMIN'}
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                Citizen
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-xs">
+                            {u.systemId ? (
+                              <span className="font-mono bg-blue-50 text-primary px-2 py-1 rounded border border-blue-100 font-semibold select-all">
+                                {u.systemId}
+                              </span>
+                            ) : (
+                              <span className="text-gray-600">{u.email || t('admin.na')}</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-xs text-gray-600">{u.phoneNumber || t('admin.na')}</td>
+                          <td className="px-5 py-3.5 text-xs text-gray-600">
+                            {u.adminLevel === 'superadmin' ? (
+                              <span className="font-semibold text-purple-700">{t('admin.globalAccess')}</span>
+                            ) : u.adminLevel === 'village' ? (
+                              <span>
+                                {j.pincode && <strong className="text-primary font-mono mr-1">PIN: {j.pincode}</strong>}
+                                <span>{j.village ? `${j.village}, ` : ''}{j.district || ''}</span>
+                              </span>
+                            ) : u.adminLevel === 'mandal' ? (
+                              <span>{j.mandal || ''}{j.district ? `, ${j.district}` : ''}</span>
+                            ) : u.adminLevel === 'district' ? (
+                              <span>{j.district || ''}{j.state ? `, ${j.state}` : ''}</span>
+                            ) : u.adminLevel === 'state' ? (
+                              <span>{j.state || ''}</span>
+                            ) : (
+                              <span className="truncate max-w-[200px] block" title={u.address}>{u.address || 'Citizen'}</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {u.isFirstLogin ? (
+                              <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-yellow-100 text-yellow-800">
+                                {t('admin.pendingSetupStatus')}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-green-100 text-green-800">
+                                {t('admin.activeStatus')}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-xs text-gray-500">
+                            {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : t('admin.na')}
+                          </td>
+                          <td className="px-5 py-3.5 text-center">
+                            {!isCurrentUser && currentUser?.adminLevel === 'superadmin' && (
+                              <button
+                                onClick={() => handleDeleteUser(u._id)}
+                                className="text-gray-400 hover:text-red-600 p-1.5 rounded-full hover:bg-red-50 transition-colors"
+                                title={t('admin.deleteUserTooltip')}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
           
           <div className="glass-card p-6 bg-white shadow-sm border border-gray-100">

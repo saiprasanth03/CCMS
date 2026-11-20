@@ -128,19 +128,23 @@ exports.registerAdminsBulk = async (req, res) => {
 
     const generatedAdmins = [];
 
-    // Process sequentially to ensure unique IDs (could optimize with bulk insert, but sequential is safer for unique constraints)
+    // Process sequentially to ensure unique IDs
     for (const adminData of admins) {
       const { adminLevel, state, district, mandal, village, pincode } = adminData;
 
       // Ensure required fields
-      if (!adminLevel || !state) continue;
+      if (!adminLevel) continue;
+      if (adminLevel !== 'superadmin' && !state) continue;
 
-      let location = { state };
-      if (adminLevel === 'district' || adminLevel === 'mandal' || adminLevel === 'village') location.district = district;
-      if (adminLevel === 'mandal' || adminLevel === 'village') location.mandal = mandal;
-      if (adminLevel === 'village') {
-        location.city = village; // Map village to city field
-        location.pincode = pincode;
+      let jurisdiction = {};
+      if (adminLevel !== 'superadmin') {
+        jurisdiction.state = (state || '').trim();
+        if (adminLevel === 'district' || adminLevel === 'mandal' || adminLevel === 'village') jurisdiction.district = (district || '').trim();
+        if (adminLevel === 'mandal' || adminLevel === 'village') jurisdiction.mandal = (mandal || '').trim();
+        if (adminLevel === 'village') {
+          jurisdiction.village = (village || '').trim();
+          jurisdiction.pincode = (pincode || '').trim();
+        }
       }
 
       // Generate a secure temporary password
@@ -152,14 +156,17 @@ exports.registerAdminsBulk = async (req, res) => {
 
       // Create new admin object
       const admin = new User({
+        fullName: `${adminLevel.toUpperCase()} Admin (${state || 'CCMS'})`,
+        phoneNumber: '0000000000',
+        address: `${village || ''} ${mandal || ''} ${district || ''} ${state || ''}`.trim() || 'Government Authority',
         role: 'admin',
         adminLevel,
         systemId,
         password: tempPassword,
-        location,
+        jurisdiction,
         isFirstLogin: true,
         isApproved: true,
-        email: `placeholder_${Date.now()}_${Math.random().toString(36).substring(7)}@gov.in` // Temporary email to satisfy schema constraints
+        email: `placeholder_${Date.now()}_${Math.random().toString(36).substring(7)}@gov.in`
       });
 
       // Save admin (this will trigger pre-save hook to hash password)
@@ -169,7 +176,7 @@ exports.registerAdminsBulk = async (req, res) => {
         systemId,
         password: tempPassword,
         adminLevel,
-        location
+        jurisdiction
       });
     }
 
@@ -184,7 +191,7 @@ exports.registerAdminsBulk = async (req, res) => {
 // @access  Private (Superadmin only)
 exports.registerAdmin = async (req, res) => {
   try {
-    // Only superadmin can create other admins (or we can relax it later)
+    // Only superadmin can create other admins
     if (!req.user || req.user.adminLevel !== 'superadmin') {
       return res.status(403).json({ success: false, error: 'Not authorized to create admins' });
     }
@@ -194,10 +201,20 @@ exports.registerAdmin = async (req, res) => {
     // Generate system ID based on jurisdiction
     let systemId = '';
     const j = jurisdiction || {};
-    if (adminLevel === 'state') systemId = `state_${j.state}`;
-    else if (adminLevel === 'district') systemId = `dist_${j.district}_${j.state}`;
-    else if (adminLevel === 'mandal') systemId = `mdl_${j.mandal}_${j.district}_${j.state}`;
-    else if (adminLevel === 'village') systemId = `vil_${j.village}_${j.district}_${j.state}_${j.pincode}`;
+
+    if (adminLevel === 'superadmin') {
+      const cleanName = (fullName || 'super').toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 8);
+      const rand = Math.floor(100 + Math.random() * 900);
+      systemId = `super_${cleanName || 'admin'}_${rand}`;
+    } else if (adminLevel === 'state') {
+      systemId = `state_${j.state || 'ap'}`;
+    } else if (adminLevel === 'district') {
+      systemId = `dist_${j.district || 'd'}_${j.state || 'ap'}`;
+    } else if (adminLevel === 'mandal') {
+      systemId = `mdl_${j.mandal || 'm'}_${j.district || 'd'}_${j.state || 'ap'}`;
+    } else if (adminLevel === 'village') {
+      systemId = `vil_${j.village || 'v'}_${j.district || 'd'}_${j.state || 'ap'}_${j.pincode || ''}`;
+    }
     
     // Clean systemId (lowercase, remove spaces)
     systemId = systemId.toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -210,19 +227,27 @@ exports.registerAdmin = async (req, res) => {
       systemId,
       phoneNumber,
       password,
-      address,
+      address: address || 'Official Jurisdiction Headquarters',
       role: 'admin',
       adminLevel,
-      jurisdiction,
+      jurisdiction: adminLevel === 'superadmin' ? {} : {
+        state: (j.state || '').trim(),
+        district: (j.district || '').trim(),
+        mandal: (j.mandal || '').trim(),
+        village: (j.village || '').trim(),
+        pincode: (j.pincode || '').trim()
+      },
       isFirstLogin: true
     });
 
     res.status(201).json({
       success: true,
       data: {
+        id: user._id,
         systemId,
         password,
-        adminLevel
+        adminLevel,
+        fullName
       }
     });
   } catch (err) {

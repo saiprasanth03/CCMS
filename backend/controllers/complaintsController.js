@@ -1,5 +1,21 @@
 const Complaint = require('../models/Complaint');
 
+// Helper to escape regex special characters
+const escapeRegex = (text) => (text || '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
+// Helper to match state (handles AP <=> Andhra Pradesh, etc.)
+const getStateRegex = (stateStr) => {
+  if (!stateStr) return null;
+  const s = stateStr.trim();
+  if (/^(ap|andhra\s*pradesh|a\.p\.)$/i.test(s)) {
+    return /^(ap|andhra\s*pradesh|a\.p\.)$/i;
+  }
+  if (/^(ts|telangana|t\.s\.)$/i.test(s)) {
+    return /^(ts|telangana|t\.s\.)$/i;
+  }
+  return new RegExp(`^\\s*${escapeRegex(s)}\\s*$`, 'i');
+};
+
 // @desc    Get all complaints
 // @route   GET /api/complaints
 // @access  Public/Private (Users see their own or public, Admin sees all)
@@ -10,22 +26,57 @@ exports.getComplaints = async (req, res) => {
     // Admin sees based on jurisdiction, users see their own
     if (req.user && req.user.role === 'admin') {
       const level = req.user.adminLevel;
-      const j = req.user.jurisdiction;
+      const j = req.user.jurisdiction || req.user.location || {};
       
       let filter = {};
       
-      if (level === 'state') filter = { 'location.state': j.state };
-      else if (level === 'district') filter = { 'location.state': j.state, 'location.district': j.district };
-      else if (level === 'mandal') filter = { 'location.state': j.state, 'location.district': j.district, 'location.mandal': j.mandal };
-      else if (level === 'village') filter = { 'location.state': j.state, 'location.district': j.district, 'location.pincode': j.pincode };
-      // superadmin (or if no level is set) gets {} which means all
-      
-      query = Complaint.find(filter).populate('user', 'fullName email phoneNumber');
+      if (level === 'superadmin') {
+        filter = {}; // Superadmin sees all complaints
+      } else if (level === 'village') {
+        // Pincode / Village level authority
+        const pincode = (j.pincode || '').trim();
+        const village = (j.village || j.city || '').trim();
+
+        if (pincode && village) {
+          filter.$or = [
+            { 'location.pincode': { $regex: new RegExp(`^\\s*${escapeRegex(pincode)}\\s*$`, 'i') } },
+            { 'location.city': { $regex: new RegExp(`^\\s*${escapeRegex(village)}\\s*$`, 'i') } }
+          ];
+        } else if (pincode) {
+          filter['location.pincode'] = { $regex: new RegExp(`^\\s*${escapeRegex(pincode)}\\s*$`, 'i') };
+        } else if (village) {
+          filter['location.city'] = { $regex: new RegExp(`^\\s*${escapeRegex(village)}\\s*$`, 'i') };
+        }
+      } else if (level === 'mandal') {
+        const mandal = (j.mandal || '').trim();
+        if (mandal) {
+          filter['location.mandal'] = { $regex: new RegExp(`^\\s*${escapeRegex(mandal)}\\s*$`, 'i') };
+        }
+        if (j.district && j.district.trim()) {
+          filter['location.district'] = { $regex: new RegExp(`^\\s*${escapeRegex(j.district.trim())}\\s*$`, 'i') };
+        }
+      } else if (level === 'district') {
+        const district = (j.district || '').trim();
+        if (district) {
+          filter['location.district'] = { $regex: new RegExp(`^\\s*${escapeRegex(district)}\\s*$`, 'i') };
+        }
+        const stateRegex = getStateRegex(j.state);
+        if (stateRegex) {
+          filter['location.state'] = { $regex: stateRegex };
+        }
+      } else if (level === 'state') {
+        const stateRegex = getStateRegex(j.state);
+        if (stateRegex) {
+          filter['location.state'] = { $regex: stateRegex };
+        }
+      }
+
+      query = Complaint.find(filter).sort({ createdAt: -1 }).populate('user', 'fullName email phoneNumber');
     } else if (req.user && req.user.role === 'user') {
-      query = Complaint.find({ user: req.user.id });
+      query = Complaint.find({ user: req.user.id }).sort({ createdAt: -1 });
     } else {
       // Public view
-      query = Complaint.find({ status: { $ne: 'Rejected' } }).populate('user', 'fullName');
+      query = Complaint.find({ status: { $ne: 'Rejected' } }).sort({ createdAt: -1 }).populate('user', 'fullName');
     }
 
     const complaints = await query;
@@ -69,6 +120,15 @@ exports.createComplaint = async (req, res) => {
   try {
     // Add user to req.body
     req.body.user = req.user.id;
+
+    // Clean and trim location strings if provided
+    if (req.body.location) {
+      ['street', 'city', 'mandal', 'district', 'state', 'pincode'].forEach(field => {
+        if (typeof req.body.location[field] === 'string') {
+          req.body.location[field] = req.body.location[field].trim();
+        }
+      });
+    }
 
     // Add initial status to timeline
     req.body.statusTimeline = [

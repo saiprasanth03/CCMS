@@ -170,18 +170,18 @@ const SubmitComplaint = () => {
     setLoading(true);
     try {
       const payload = {
-        title: formData.title,
+        title: formData.title.trim(),
         category: formData.category,
-        description: formData.description,
+        description: formData.description.trim(),
         priority: formData.priority,
         isAnonymous: formData.isAnonymous,
         location: {
-          street: formData.street,
-          city: formData.city,
-          mandal: formData.mandal,
-          district: formData.district,
-          state: formData.state,
-          pincode: formData.pincode,
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          mandal: formData.mandal.trim(),
+          district: formData.district.trim(),
+          state: formData.state.trim(),
+          pincode: formData.pincode.trim(),
           lat: position.lat,
           lng: position.lng
         }

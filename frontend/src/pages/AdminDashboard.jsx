@@ -126,10 +126,16 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchComplaints();
-    if (currentUser?.adminLevel === 'superadmin') {
+    if (currentUser?.role === 'admin') {
       fetchUsers();
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
 
   const handleStatusChange = async (id, newStatus) => {
     try {

@@ -7,10 +7,12 @@ const morgan = require('morgan');
 const http = require('http');
 const { Server } = require('socket.io');
 
+const path = require('path');
 const connectDB = require('./config/db');
 
 // Load env vars
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config(); // fallback
 
 // Connect to database
 connectDB();
